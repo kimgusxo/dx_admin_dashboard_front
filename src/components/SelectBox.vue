@@ -7,9 +7,11 @@
       @mouseover="hoverDropdown(true)"
       @mouseleave="hoverDropdown(false)"
     >
-      <span class="selected-store">{{ selectedStore?.name || "역삼점" }}</span>
+      <span class="selected-store">
+        {{ selectedStoreName }}
+      </span>
       <div class="dropdown-icon">
-        <!-- <span>▼</span> -->
+        <!-- 아이콘 필요하면 여기 넣기 -->
       </div>
     </div>
 
@@ -18,104 +20,69 @@
       <ul v-if="isOpen" class="store-list">
         <li
           v-for="store in stores"
-          :key="store.id"
+          :key="store.storeId"
           class="store-item"
           @click="selectStore(store)"
         >
-          {{ store.name }}
+          {{ store.storeName }}
         </li>
       </ul>
     </transition>
   </div>
 </template>
 
-<!-- <script>
-import { ref, computed } from "vue"; // ref를 import
-import { useMealKitStore } from "@/store/MealKit.js";
-import { useLaundryStore } from "@/store/LaundryList.js";
+<script setup>
+import { ref, computed, onMounted } from "vue";
+import { useStoreListStore } from "@/store/storeListStore"; 
+// ↑ 파일 이름에 맞게 경로만 수정하면 됨
+// 예: "@/store/StoreList" 또는 "@/store/storeListStore" 등
 
-export default {
-  name: "SelectBox",
-  setup() {
-    // Pinia 스토어
-    const mealKitStore = useMealKitStore();
-    const laundryStore = useLaundryStore();
+const storeListStore = useStoreListStore();
 
-    // 스토어에서 stores 데이터 가져오기
-    const stores = computed(() =>
-      mealKitStore.stores.map((store) => ({
-        storeId: store.storeId,
-        name: store.name,
-      }))
-    );
+// 드롭다운 열림 상태
+const isOpen = ref(false);
 
-    // 현재 선택된 매장 이름
-    const selectedStoreName = computed(() => {
-      const selectedStore = mealKitStore.selectedStore;
-      return selectedStore ? selectedStore.name : "매장 선택";
-    });
+// 매장 목록 (Pinia에서 가져옴)
+const stores = computed(() => storeListStore.stores);
 
-    // 드롭다운 상태
-    const isOpen = ref(false);
+// 선택된 매장 (Pinia 상태)
+const selectedStore = computed(() => storeListStore.selectedStore);
 
-    // 드롭다운 토글
-    const toggleDropdown = () => {
-      isOpen.value = !isOpen.value;
-    };
+// 화면에 보여줄 선택 매장 이름
+const selectedStoreName = computed(() => {
+  return selectedStore.value?.storeName || "역삼점";
+});
 
-    // 드롭다운 hover 상태
-    const hoverDropdown = (hover) => {
-      if (!isOpen.value) isOpen.value = hover;
-    };
-
-    // 매장 선택 처리
-    const handleStoreSelection = (storeId, storeName) => {
-      mealKitStore.selectStore(storeId); // MealKit 매장 변경
-      laundryStore.selectStore(storeId); // Laundry 매장 변경
-      isOpen.value = false; // 드롭다운 닫기
-    };
-
-    return {
-      stores,
-      selectedStoreName,
-      isOpen,
-      toggleDropdown,
-      hoverDropdown,
-      handleStoreSelection,
-    };
-  },
+// 드롭다운 토글
+const toggleDropdown = () => {
+  isOpen.value = !isOpen.value;
 };
-</script> -->
-<script>
-export default {
-  name: "SelectBox",
-  data() {
-    return {
-      // 더미 데이터
-      stores: [
-        { id: 1, name: "역삼점" },
-      ],
-      selectedStore: "역삼점", // 선택된 매장 정보
-      isOpen: false, // 드롭다운 열림 여부
-      isHovered: false, // 드롭다운 hover 상태
-    };
-  },
-  methods: {
-    // 드롭다운 열고 닫기
-    toggleDropdown() {
-      this.isOpen = !this.isOpen;
-    },
-    // hover 상태 변경
-    hoverDropdown(hover) {
-      this.isHovered = hover;
-    },
-    // 매장 선택
-    selectStore(store) {
-      this.selectedStore = store; // 선택된 매장 설정
-      this.isOpen = false; // 드롭다운 닫기
-    },
-  },
+
+// hover 상태 (지금은 스타일에 안 쓰고 있지만 필요하면 확장 가능)
+const isHovered = ref(false);
+const hoverDropdown = (hover) => {
+  isHovered.value = hover;
 };
+
+// 매장 선택
+const selectStore = (store) => {
+  storeListStore.selectStore(store.storeId); // Pinia 상태 변경
+  isOpen.value = false; // 드롭다운 닫기
+};
+
+// 컴포넌트 마운트 시 매장 리스트 불러오기
+onMounted(async () => {
+  await storeListStore.fetchStoreList();
+
+  // 아직 선택된 매장이 없으면 기본값으로 역삼점 또는 첫 번째 매장 선택
+  if (!storeListStore.selectedStore && storeListStore.stores.length > 0) {
+    const defaultStore =
+      storeListStore.stores.find((s) => s.storeName === "역삼점") ||
+      storeListStore.stores[0];
+
+    storeListStore.selectStore(defaultStore.storeId);
+  }
+});
 </script>
 
 <style scoped>

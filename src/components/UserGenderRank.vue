@@ -12,8 +12,8 @@
       <tbody>
         <tr v-for="(rank, index) in 5" :key="index" class="row">
           <td>{{ index + 1 }}</td>
-          <td>{{ malePreferences[index]?.mealKitName || '없음' }}</td>
-          <td>{{ femalePreferences[index]?.mealKitName || '없음' }}</td>
+          <td>{{ malePreferences[index]?.mealKitName || "없음" }}</td>
+          <td>{{ femalePreferences[index]?.mealKitName || "없음" }}</td>
         </tr>
       </tbody>
     </table>
@@ -23,42 +23,30 @@
   </div>
 </template>
 
-<script>
-import { ref, computed, onMounted } from "vue";
-import { useUserGenderRankStore } from "@/store/UserGenderRank";
+<script setup>
+import { computed, onMounted } from "vue";
+import { useUserStore } from "@/store/userStore";
 
-export default {
-  name: "UserGenderRank",
-  setup() {
-    // Pinia store 가져오기
-    const userGenderRankStore = useUserGenderRankStore();
-
-    // 데이터 상태 변수
-    const storeId = 1; // 매장 ID (하드코딩, 필요에 따라 변경 가능)
-
-    // 컴포저블 API에서 가져오는 computed 변수들
-    const malePreferences = computed(() => userGenderRankStore.malePreferences);
-    const femalePreferences = computed(() => userGenderRankStore.femalePreferences);
-    const isLoading = computed(() => userGenderRankStore.isLoading);
-
-    // 성별 선호 밀키트 리스트 가져오기 함수
-    const fetchPreferences = async () => {
-      await userGenderRankStore.fetchGenderPreferences(storeId);
-    };
-
-    // 컴포넌트 마운트 시 데이터 로드
-    onMounted(fetchPreferences);
-
-    // 반환 값
-    return {
-      malePreferences,
-      femalePreferences,
-      isLoading,
-    };
+const props = defineProps({
+  storeId: {
+    type: Number,
+    default: 1,
   },
+});
+
+const userStore = useUserStore();
+
+const malePreferences = computed(() => userStore.malePreferences);
+const femalePreferences = computed(() => userStore.femalePreferences);
+const isLoading = computed(() => userStore.isLoading);
+
+const fetchPreferences = async () => {
+  await userStore.fetchGenderPreferences(props.storeId);
 };
+
+onMounted(fetchPreferences);
 </script>
-  
+
 <style scoped>
 .preference-table-wrapper {
   width: 510px;

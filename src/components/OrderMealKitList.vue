@@ -47,7 +47,9 @@
             <td>{{ kit.mealKitPrice.toLocaleString() }}원</td>
             <td>{{ kit.mealKitCount }}</td>
             <td>
-              <button @click="addToCart(kit.mealKitId)" class="button">담기</button>
+              <button @click="addToCart(kit.mealKitId)" class="button">
+                담기
+              </button>
             </td>
           </tr>
         </tbody>
@@ -57,58 +59,57 @@
 </template>
 
 <script setup>
-import { useMealKitStore } from "@/store/MealKitStore";
+import { useMealKitStore } from "@/store/mealKitStore";
 import { storeToRefs } from "pinia";
 import { ref, computed, onMounted } from "vue";
 
 const mealKitStore = useMealKitStore();
 const { lowStockMealKits } = storeToRefs(mealKitStore);
 
-// 필터 상태
 const selectedClassification = ref("");
 const selectedFoodClassification = ref("");
 const sortOrder = ref("asc");
 
-// 필터링된 아이템
 const filteredItems = computed(() =>
   lowStockMealKits.value.filter((kit) => {
     const matchesClassification =
-      !selectedClassification.value || kit.mealKitClassification === selectedClassification.value;
+      !selectedClassification.value ||
+      kit.mealKitClassification === selectedClassification.value;
     const matchesFoodClassification =
-      !selectedFoodClassification.value || kit.mealKitFoodClassification === selectedFoodClassification.value;
+      !selectedFoodClassification.value ||
+      kit.mealKitFoodClassification === selectedFoodClassification.value;
     return matchesClassification && matchesFoodClassification;
   })
 );
 
-// 정렬된 아이템
 const sortedItems = computed(() =>
   [...filteredItems.value].sort((a, b) => {
-    return sortOrder.value === "asc" ? a.mealKitCount - b.mealKitCount : b.mealKitCount - a.mealKitCount;
+    return sortOrder.value === "asc"
+      ? a.mealKitCount - b.mealKitCount
+      : b.mealKitCount - a.mealKitCount;
   })
 );
 
-// 정렬 순서 변경
 const toggleSortOrder = () => {
   sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
 };
 
-// 장바구니에 추가
 const addToCart = (id) => {
   mealKitStore.addToCart(id);
 };
 
-// 분류 옵션
 const classifications = computed(() => [
   ...new Set(lowStockMealKits.value.map((kit) => kit.mealKitClassification)),
 ]);
 
 const foodClassifications = computed(() => [
-  ...new Set(lowStockMealKits.value.map((kit) => kit.mealKitFoodClassification)),
+  ...new Set(
+    lowStockMealKits.value.map((kit) => kit.mealKitFoodClassification)
+  ),
 ]);
 
-// 데이터 로드
 onMounted(async () => {
-  const storeId = 1; // Example Store ID
+  const storeId = 1;
   await mealKitStore.fetchMealKits(storeId);
 });
 </script>
@@ -141,8 +142,8 @@ select {
   font-size: 16px;
   font-weight: bold;
   color: #333;
-  border-color: #FFF7EF;
-  background-color: #FFF7EF;
+  border-color: #fff7ef;
+  background-color: #fff7ef;
   padding: 0;
 }
 
@@ -165,7 +166,7 @@ thead {
   position: sticky;
   top: 0;
   z-index: 1;
-  background-color: #FFF7EF;
+  background-color: #fff7ef;
 }
 
 thead th {
@@ -194,8 +195,8 @@ tbody td {
 }
 
 .button {
-  color: #FFD1A7;
-  background-color: #FF5E23;
+  color: #ffd1a7;
+  background-color: #ff5e23;
   font-size: 15px;
   display: block;
   margin: 10px 0;
@@ -208,7 +209,7 @@ tbody td {
 .button:hover {
   transform: scale(1.1);
   background-color: #ededed;
-  color: #FF5E23;
+  color: #ff5e23;
   cursor: pointer;
 }
 </style>

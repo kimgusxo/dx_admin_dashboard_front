@@ -10,7 +10,11 @@
             <th>이름</th>
             <th>
               <div class="filter">
-                <select id="gender-filter" v-model="filters.gender" @change="filterCustomers">
+                <select
+                  id="gender-filter"
+                  v-model="filters.gender"
+                  @change="onFilterChange"
+                >
                   <option value="all">성별</option>
                   <option value="남">남</option>
                   <option value="여">여</option>
@@ -20,7 +24,11 @@
             <th>나이</th>
             <th>
               <div class="filter">
-                <select id="subscription-filter" v-model="filters.subscription" @change="filteredCustomers">
+                <select
+                  id="subscription-filter"
+                  v-model="filters.subscription"
+                  @change="onFilterChange"
+                >
                   <option value="all">구독 여부</option>
                   <option value="구독">구독</option>
                   <option value="미구독">미구독</option>
@@ -30,7 +38,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(customer, index) in filteredCustomers" :key="index" class="row">
+          <tr
+            v-for="(customer, index) in filteredCustomers"
+            :key="index"
+            class="row"
+          >
             <td>{{ customer.userName }}</td>
             <td>{{ customer.userGender }}</td>
             <td>{{ customer.userAge }}</td>
@@ -38,59 +50,58 @@
           </tr>
         </tbody>
       </table>
-      <p v-if="filteredCustomers.length === 0">조건에 맞는 고객 데이터가 없습니다.</p>
+      <p v-if="filteredCustomers.length === 0">
+        조건에 맞는 고객 데이터가 없습니다.
+      </p>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, computed, onMounted } from "vue";
-import { useUserListStore } from "@/store/User";
+import { useUserStore } from "@/store/userStore";
 
-export default {
-  name: "UserList",
-  setup() {
-    const storeId = 1; // 예시 매장 ID
-    const userListStore = useUserListStore();
-
-    // 상태 가져오기
-    const users = computed(() => userListStore.users);
-    const isLoading = computed(() => userListStore.isLoading);
-    const error = computed(() => userListStore.error);
-
-    // 필터 상태
-    const filters = ref({
-      gender: "all",
-      subscription: "all",
-    });
-
-    // 필터링된 고객 리스트
-    const filteredCustomers = computed(() => {
-      const { gender, subscription } = filters.value;
-      return users.value.filter((customer) => {
-        const matchesGender = gender === "all" || customer.userGender === gender;
-        const matchesSubscription =
-          subscription === "all" || (subscription === "구독" ? customer.isSubscribe : !customer.isSubscribe);
-        return matchesGender && matchesSubscription;
-      });
-    });
-
-    // 데이터 가져오기
-    const fetchUsers = async () => {
-      await userListStore.fetchUsers(storeId);
-    };
-
-    // 컴포넌트 마운트 시 데이터 가져오기
-    onMounted(fetchUsers);
-
-    return {
-      filters,
-      filteredCustomers,
-      isLoading,
-      error,
-    };
+const props = defineProps({
+  storeId: {
+    type: Number,
+    default: 1,
   },
+});
+
+const userStore = useUserStore();
+
+const users = computed(() => userStore.users);
+const isLoading = computed(() => userStore.isLoading);
+const error = computed(() => userStore.error);
+
+const filters = ref({
+  gender: "all",
+  subscription: "all",
+});
+
+const filteredCustomers = computed(() => {
+  const { gender, subscription } = filters.value;
+  return users.value.filter((customer) => {
+    const matchesGender =
+      gender === "all" || customer.userGender === gender;
+    const matchesSubscription =
+      subscription === "all" ||
+      (subscription === "구독"
+        ? customer.isSubscribe
+        : !customer.isSubscribe);
+    return matchesGender && matchesSubscription;
+  });
+});
+
+const fetchUsers = async () => {
+  await userStore.fetchUsers(props.storeId);
 };
+
+const onFilterChange = () => {
+  // 필터링은 computed에서 처리하므로 여기서는 따로 로직 불필요
+};
+
+onMounted(fetchUsers);
 </script>
 
 <style scoped>
@@ -127,11 +138,13 @@ select {
 option {
   background-color: white;
 }
+
 .customer-table {
   max-height: 80%;
   overflow-x: hidden;
   overflow-y: auto;
 }
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -141,7 +154,7 @@ thead {
   position: sticky;
   top: 0;
   z-index: 1;
-  background-color: #FFF7EF;
+  background-color: #fff7ef;
 }
 
 thead th {

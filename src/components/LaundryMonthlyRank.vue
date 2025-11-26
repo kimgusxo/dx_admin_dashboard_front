@@ -2,12 +2,14 @@
   <div>
     <div class="monthly-rank-wrapper">
       <div class="header">
-        <h3>{{ selectedYear }}년 {{ selectedMonth }}월 세탁용품 판매량 순위
+        <h3>
+          {{ selectedYear }}년 {{ selectedMonth }}월 세탁용품 판매량 순위
           <button class="calendar-btn" @click="togglePopup">
             <img src="./calendar-icon1.png" alt="달력 아이콘" />
           </button>
         </h3>
       </div>
+
       <table>
         <thead>
           <tr>
@@ -17,15 +19,22 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(supplies, index) in rankedLaundrySupplies" :key="index" class="row">
+          <tr
+            v-for="(supplies, index) in rankedLaundrySupplies"
+            :key="index"
+            class="row"
+          >
             <td>{{ index + 1 }}</td>
             <td>{{ supplies.laundrySuppliesName }}</td>
             <td>{{ supplies.totalSales.toLocaleString() }}</td>
           </tr>
         </tbody>
       </table>
+
       <p v-if="isLoading">데이터를 로드 중입니다...</p>
-      <p v-else-if="error" style="text-align: center;">{{ selectedYear }}년 {{ selectedMonth }}월의 세탁용품 판매량 데이터가 없습니다.</p>
+      <p v-else-if="error" style="text-align: center;">
+        {{ error }}
+      </p>
     </div>
 
     <div v-if="isPopupOpen" class="popup-overlay" @click="closePopup">
@@ -47,81 +56,68 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, computed, onMounted } from "vue";
-import { useLaundrySuppliesMonthlyRankStore } from "@/store/LaundryMonthlyRank"; // Pinia Store Import
+import { useLaundrySuppliesStore } from "@/store/laundrySuppliesStore";
 
-export default {
-  name: "LaundrySuppliesMonthlyRank",
-  setup() {
-    const storeId = 1; // 예시 Store ID
-    const currentDate = new Date();
-
-    // Year and Month Selection
-    const selectedYear = ref(currentDate.getFullYear());
-    const selectedMonth = ref(currentDate.getMonth() + 1);
-    const popupYear = ref(currentDate.getFullYear());
-    const isPopupOpen = ref(false);
-
-    // Pinia Store
-    const laundrySuppliesMonthlyRankStore = useLaundrySuppliesMonthlyRankStore();
-    const rankedLaundrySupplies = computed(() => laundrySuppliesMonthlyRankStore.rankedLaundrySupplies);
-    const isLoading = computed(() => laundrySuppliesMonthlyRankStore.isLoading);
-    const error = computed(() => laundrySuppliesMonthlyRankStore.error);
-
-    // Fetch Rankings
-    const fetchRankings = async () => {
-      await laundrySuppliesMonthlyRankStore.fetchLaundrySuppliesSalesRank(
-        storeId,
-        selectedYear.value,
-        selectedMonth.value
-      );
-    };
-
-    // Popup Controls
-    const togglePopup = () => {
-      isPopupOpen.value = !isPopupOpen.value;
-    };
-
-    const closePopup = () => {
-      isPopupOpen.value = false;
-    };
-
-    const prevYear = () => {
-      popupYear.value--;
-    };
-
-    const nextYear = () => {
-      popupYear.value++;
-    };
-
-    const selectMonth = (month) => {
-      selectedYear.value = popupYear.value;
-      selectedMonth.value = month;
-      closePopup();
-      fetchRankings(); // Fetch new data for the selected month
-    };
-
-    // Load data on mount
-    onMounted(fetchRankings);
-
-    return {
-      selectedYear,
-      selectedMonth,
-      popupYear,
-      isPopupOpen,
-      months: Array.from({ length: 12 }, (_, i) => i + 1), // Array of months
-      rankedLaundrySupplies,
-      isLoading,
-      error,
-      togglePopup,
-      closePopup,
-      prevYear,
-      nextYear,
-      selectMonth,
-    };
+const props = defineProps({
+  storeId: {
+    type: Number,
+    default: 1,
   },
+});
+
+const storeId = computed(() => props.storeId);
+const currentDate = new Date();
+
+// 연/월 선택
+const selectedYear = ref(currentDate.getFullYear());
+const selectedMonth = ref(currentDate.getMonth() + 1);
+const popupYear = ref(currentDate.getFullYear());
+const isPopupOpen = ref(false);
+
+// Pinia 스토어
+const laundryStore = useLaundrySuppliesStore();
+
+const rankedLaundrySupplies = computed(() => laundryStore.monthlyRank);
+const isLoading = computed(() => laundryStore.isLoading);
+const error = computed(() => laundryStore.error);
+
+// 랭킹 조회
+const fetchRankings = async () => {
+  await laundryStore.fetchMonthlyRank(
+    storeId.value,
+    selectedYear.value,
+    selectedMonth.value
+  );
 };
+
+// 팝업 제어
+const togglePopup = () => {
+  isPopupOpen.value = !isPopupOpen.value;
+};
+
+const closePopup = () => {
+  isPopupOpen.value = false;
+};
+
+const prevYear = () => {
+  popupYear.value--;
+};
+
+const nextYear = () => {
+  popupYear.value++;
+};
+
+const selectMonth = (month) => {
+  selectedYear.value = popupYear.value;
+  selectedMonth.value = month;
+  closePopup();
+  fetchRankings();
+};
+
+// 최초 로드
+onMounted(fetchRankings);
 </script>
 
 <style scoped>

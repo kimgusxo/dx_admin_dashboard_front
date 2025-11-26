@@ -2,7 +2,8 @@
   <div>
     <div class="monthly-rank-wrapper">
       <div class="header">
-        <h3>{{ selectedYear }}년 {{ selectedMonth }}월 밀키트 판매량 순위
+        <h3>
+          {{ selectedYear }}년 {{ selectedMonth }}월 밀키트 판매량 순위
           <button class="calendar-btn" @click="togglePopup">
             <img src="./calendar-icon1.png" alt="달력 아이콘" />
           </button>
@@ -17,7 +18,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(kit, index) in rankedMealKits" :key="index" class="row">
+          <tr
+            v-for="(kit, index) in rankedMealKits"
+            :key="index"
+            class="row"
+          >
             <td>{{ index + 1 }}</td>
             <td>{{ kit.mealKitName }}</td>
             <td>{{ kit.totalSales.toLocaleString() }}</td>
@@ -25,7 +30,9 @@
         </tbody>
       </table>
       <p v-if="isLoading">데이터를 로드 중입니다...</p>
-      <p v-else-if="error" style="text-align: center;">{{ selectedYear }}년 {{ selectedMonth }}월의 밀키트 판매량 데이터가 없습니다.</p>
+      <p v-else-if="error" style="text-align: center;">
+        {{ error }}
+      </p>
     </div>
 
     <div v-if="isPopupOpen" class="popup-overlay" @click="closePopup">
@@ -37,7 +44,11 @@
         </div>
         <div class="popup-body">
           <div class="month-grid">
-            <button v-for="month in months" :key="month" @click="selectMonth(month)">
+            <button
+              v-for="month in months"
+              :key="month"
+              @click="selectMonth(month)"
+            >
               {{ month }}월
             </button>
           </div>
@@ -47,81 +58,63 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, computed, onMounted } from "vue";
-import { useMealKitMonthlyRankStore } from "@/store/MealKitMonthlyRank";
+import { useMealKitStore } from "@/store/mealKitStore";
 
-export default {
-  name: "MealKitMonthlyRank",
-  setup() {
-    const storeId = 1; // Example Store ID
-    const currentDate = new Date();
-
-    // Year and Month Selection
-    const selectedYear = ref(currentDate.getFullYear());
-    const selectedMonth = ref(currentDate.getMonth() + 1);
-    const popupYear = ref(currentDate.getFullYear());
-    const isPopupOpen = ref(false);
-
-    // Pinia Store
-    const mealKitMonthlyRankStore = useMealKitMonthlyRankStore();
-    const rankedMealKits = computed(() => mealKitMonthlyRankStore.rankedMealKits);
-    const isLoading = computed(() => mealKitMonthlyRankStore.isLoading);
-    const error = computed(() => mealKitMonthlyRankStore.error);
-
-    // Fetch Rankings
-    const fetchRankings = async () => {
-      await mealKitMonthlyRankStore.fetchMealKitSalesRank(
-        storeId,
-        selectedYear.value,
-        selectedMonth.value
-      );
-    };
-
-    // Popup Controls
-    const togglePopup = () => {
-      isPopupOpen.value = !isPopupOpen.value;
-    };
-
-    const closePopup = () => {
-      isPopupOpen.value = false;
-    };
-
-    const prevYear = () => {
-      popupYear.value--;
-    };
-
-    const nextYear = () => {
-      popupYear.value++;
-    };
-
-    const selectMonth = (month) => {
-      selectedYear.value = popupYear.value;
-      selectedMonth.value = month;
-      closePopup();
-      fetchRankings(); // Fetch new data for the selected month
-    };
-
-    // Load data on mount
-    onMounted(fetchRankings);
-
-    return {
-      selectedYear,
-      selectedMonth,
-      popupYear,
-      isPopupOpen,
-      months: Array.from({ length: 12 }, (_, i) => i + 1), // Array of months
-      rankedMealKits,
-      isLoading,
-      error,
-      togglePopup,
-      closePopup,
-      prevYear,
-      nextYear,
-      selectMonth,
-    };
+const props = defineProps({
+  storeId: {
+    type: Number,
+    default: 1,
   },
+});
+
+const mealKitStore = useMealKitStore();
+
+const currentDate = new Date();
+const selectedYear = ref(currentDate.getFullYear());
+const selectedMonth = ref(currentDate.getMonth() + 1);
+const popupYear = ref(currentDate.getFullYear());
+const isPopupOpen = ref(false);
+
+const rankedMealKits = computed(() => mealKitStore.monthlyRank);
+const isLoading = computed(() => mealKitStore.isLoading);
+const error = computed(() => mealKitStore.error);
+
+const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
+const fetchRankings = async () => {
+  await mealKitStore.fetchMonthlyRank(
+    props.storeId,
+    selectedYear.value,
+    selectedMonth.value
+  );
 };
+
+const togglePopup = () => {
+  isPopupOpen.value = !isPopupOpen.value;
+};
+
+const closePopup = () => {
+  isPopupOpen.value = false;
+};
+
+const prevYear = () => {
+  popupYear.value--;
+};
+
+const nextYear = () => {
+  popupYear.value++;
+};
+
+const selectMonth = (month) => {
+  selectedYear.value = popupYear.value;
+  selectedMonth.value = month;
+  closePopup();
+  fetchRankings();
+};
+
+onMounted(fetchRankings);
 </script>
 
 <style scoped>

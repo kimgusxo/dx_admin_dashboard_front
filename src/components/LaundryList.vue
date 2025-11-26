@@ -8,9 +8,13 @@
             <th>이름</th>
             <th>
               <div class="filter">
-                <select v-model="filters.category" @change="filterLaundrySupplies">
+                <select v-model="filters.category">
                   <option value="all">분류</option>
-                  <option v-for="category in uniqueCategories" :key="category" :value="category">
+                  <option
+                    v-for="category in uniqueCategories"
+                    :key="category"
+                    :value="category"
+                  >
                     {{ category }}
                   </option>
                 </select>
@@ -21,75 +25,84 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in filteredLaundrySupplies" :key="item.laundrySuppliesId" class="row">
+          <tr
+            v-for="item in filteredLaundrySupplies"
+            :key="item.laundrySuppliesId"
+            class="row"
+          >
             <td>{{ item.laundrySuppliesName }}</td>
             <td>{{ item.laundrySuppliesClassification }}</td>
             <td>{{ item.laundrySuppliesPrice.toLocaleString() }} 원</td>
             <td>{{ item.storeCount }}</td>
           </tr>
-          <tr v-if="filteredLaundrySupplies.length === 0">
+          <tr v-if="!filteredLaundrySupplies.length && !isLoading">
             <td colspan="4">세탁용품 데이터가 없습니다.</td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <p v-if="isLoading" class="loading-text">데이터를 로드 중입니다...</p>
+    <p v-else-if="error" class="error-text">{{ error }}</p>
   </div>
 </template>
 
-<script>
-import { useLaundryStore } from "@/store/Laundry"; // Adjusted import
+<script setup>
 import { computed, onMounted, ref } from "vue";
+import { useLaundrySuppliesStore } from "@/store/laundrySuppliesStore";
 
-export default {
-  name: "LaundryList",
-  setup() {
-    const laundryStore = useLaundryStore();
-
-    // 필터 상태 관리
-    const filters = ref({
-      category: "all",
-    });
-
-    // 현재 선택된 매장
-    const selectedStoreName = computed(() => laundryStore.selectedStoreName || "매장");
-
-    // 세탁용품 목록
-    const laundrySupplies = computed(() => laundryStore.items);
-
-    // 필터링된 세탁용품
-    const filteredLaundrySupplies = computed(() => {
-      return laundrySupplies.value.filter((item) => {
-        const matchesCategory =
-          filters.value.category === "all" || item.laundrySuppliesClassification === filters.value.category;
-        return matchesCategory;
-      });
-    });
-
-    // 고유 카테고리
-    const uniqueCategories = computed(() =>
-      Array.from(new Set(laundrySupplies.value.map((item) => item.laundrySuppliesClassification)))
-    );
-
-    // 컴포넌트 마운트 후 세탁용품 데이터 로드
-    onMounted(async () => {
-      const storeId = 1; // 예시로 storeId 1을 사용
-      await laundryStore.fetchLaundrySupplies(storeId); // 세탁용품 데이터 로드
-    });
-
-    // 필터 변경 시 호출되는 함수
-    const filterLaundrySupplies = () => {
-      // 필터링 로직은 computed 속성에서 처리되므로 이 곳에 따로 로직을 추가하지 않음
-    };
-
-    return {
-      filters,
-      filteredLaundrySupplies,
-      uniqueCategories,
-      selectedStoreName,
-      filterLaundrySupplies,
-    };
+const props = defineProps({
+  storeId: {
+    type: Number,
+    default: 1,
   },
-};
+  selectedStoreName: {
+    type: String,
+    default: "매장",
+  },
+});
+
+const laundryStore = useLaundrySuppliesStore();
+
+// 필터 상태
+const filters = ref({
+  category: "all",
+});
+
+// 원본 리스트 (매장별)
+const laundrySupplies = computed(() =>
+  laundryStore.suppliesByStore(props.storeId)
+);
+
+// 필터링된 리스트
+const filteredLaundrySupplies = computed(() => {
+  return laundrySupplies.value.filter((item) => {
+    const matchesCategory =
+      filters.value.category === "all" ||
+      item.laundrySuppliesClassification === filters.value.category;
+    return matchesCategory;
+  });
+});
+
+// 카테고리 목록
+const uniqueCategories = computed(() =>
+  Array.from(
+    new Set(
+      laundrySupplies.value.map(
+        (item) => item.laundrySuppliesClassification
+      )
+    )
+  )
+);
+
+// 로딩/에러
+const isLoading = computed(() => laundryStore.isLoading);
+const error = computed(() => laundryStore.error);
+
+// 마운트 시 데이터 로드
+onMounted(async () => {
+  await laundryStore.fetchLaundrySupplies(props.storeId);
+});
 </script>
 
 <style scoped>
@@ -174,5 +187,16 @@ tbody td {
 .row {
   transition: transform 0.2s ease-in-out;
   cursor: default;
+}
+
+.loading-text,
+.error-text {
+  text-align: center;
+  font-size: 14px;
+  margin-top: 20px;
+}
+
+.error-text {
+  color: red;
 }
 </style>

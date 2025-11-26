@@ -11,11 +11,11 @@
       </div>
 
       <div class="chart-container">
-        <!-- 그래프 영역 -->
         <canvas id="customerChart" v-if="!error"></canvas>
 
-        <!-- 오류 메시지 -->
-        <p v-if="error" class="error">{{ selectedYear }}년 월별 매장 방문 고객 수 데이터가 없습니다.</p>
+        <p v-if="error" class="error">
+          {{ selectedYear }}년 월별 매장 방문 고객 수 데이터가 없습니다.
+        </p>
       </div>
 
       <!-- 연도 선택 팝업 -->
@@ -41,7 +41,7 @@
 
 <script>
 import { Chart, registerables } from "chart.js";
-import { useMonthlyCustomerChartStore } from "@/store/MainMonthlyCustomerChart";
+import { useOrderStatsStore } from "@/store/orderStatsStore";
 import { ref, computed, onMounted } from "vue";
 
 Chart.register(...registerables);
@@ -49,19 +49,20 @@ Chart.register(...registerables);
 export default {
   name: "MonthlyCustomerChart",
   setup() {
-    const baseYear = 2023; // 기본 연도
-    const availableYears = ref([baseYear + 1, baseYear, baseYear - 1]); // 기본 연도와 ±1년
-    const selectedYear = ref(baseYear); // 현재 선택된 연도
+    const orderStatsStore = useOrderStatsStore();
+
+    const baseYear = 2023; // 기본 연도 (필요하면 new Date().getFullYear()로 변경)
+    const selectedYear = ref(baseYear);
     const popupYear = ref(baseYear);
     const isPopupOpen = ref(false);
 
-    const store = useMonthlyCustomerChartStore();
+    // 이 컴포넌트는 연도 목록을 로컬에서 관리 (2022~2024 예시)
+    const availableYears = ref([baseYear + 1, baseYear, baseYear - 1]);
+
+    const error = computed(() => orderStatsStore.error);
+    const isLoading = computed(() => orderStatsStore.isLoading);
     const chartInstance = ref(null);
 
-    // Pinia에서 error 상태 가져오기
-    const error = computed(() => store.error);
-
-    // 차트 렌더링
     const renderChart = (data) => {
       const canvas = document.getElementById("customerChart");
       if (!canvas) {
@@ -71,7 +72,6 @@ export default {
 
       const ctx = canvas.getContext("2d");
 
-      // 기존 차트 제거
       if (chartInstance.value) {
         chartInstance.value.destroy();
       }
@@ -79,11 +79,24 @@ export default {
       chartInstance.value = new Chart(ctx, {
         type: "line",
         data: {
-          labels: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+          labels: [
+            "1월",
+            "2월",
+            "3월",
+            "4월",
+            "5월",
+            "6월",
+            "7월",
+            "8월",
+            "9월",
+            "10월",
+            "11월",
+            "12월",
+          ],
           datasets: [
             {
               label: "월별 매장 방문 고객 수 (단위: 명)",
-              data: data,
+              data,
               backgroundColor: "rgba(54, 162, 235, 0.2)",
               borderColor: "rgb(54, 162, 235)",
               borderWidth: 2,
@@ -113,25 +126,28 @@ export default {
       });
     };
 
-    // 서버 데이터 가져오고 차트 렌더링
     const fetchAndRenderData = async () => {
-      await store.fetchMonthlyData(1, selectedYear.value); // storeId = 1
+      // storeId는 일단 1로 고정 (나중에 Store 선택 기능 붙이면 변경)
+      const storeId = 1;
+      await orderStatsStore.fetchMonthlyVisitors(storeId, selectedYear.value);
+
       if (!error.value) {
         const visitorCounts = Array(12).fill(0);
-        store.monthlyData.forEach((item) => {
-          visitorCounts[item.month - 1] = item.visitorCount;
+        orderStatsStore.monthlyVisitors.forEach((item) => {
+          if (item.month >= 1 && item.month <= 12) {
+            visitorCounts[item.month - 1] = item.visitorCount;
+          }
         });
         renderChart(visitorCounts);
       } else {
         console.warn("Error detected:", error.value);
         if (chartInstance.value) {
-          chartInstance.value.destroy(); // 오류가 있으면 차트 제거
+          chartInstance.value.destroy();
           chartInstance.value = null;
         }
       }
     };
 
-    // 팝업 열기/닫기
     const togglePopup = () => {
       isPopupOpen.value = !isPopupOpen.value;
     };
@@ -140,7 +156,6 @@ export default {
       isPopupOpen.value = false;
     };
 
-    // 연도 선택
     const selectYear = (year) => {
       selectedYear.value = year;
       popupYear.value = year;
@@ -159,6 +174,7 @@ export default {
       closePopup,
       selectYear,
       error,
+      isLoading,
     };
   },
 };
@@ -215,7 +231,7 @@ h3 {
   font-weight: bold;
   color: #333;
   border-radius: 8px;
-  background-color: #FFD1A7;
+  background-color: #ffd1a7;
   padding: 20px;
   margin-top: 0px;
 }

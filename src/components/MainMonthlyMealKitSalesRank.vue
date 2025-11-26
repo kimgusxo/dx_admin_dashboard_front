@@ -9,6 +9,7 @@
           </button>
         </h3>
       </div>
+
       <table v-if="!isLoading && rankedMealKits.length">
         <thead>
           <tr>
@@ -29,9 +30,13 @@
           </tr>
         </tbody>
       </table>
+
       <p v-if="isLoading">데이터를 로드 중입니다...</p>
-      <p v-else-if="!rankedMealKits.length && !isLoading" class="error" style="text-align: center;">
-        <!-- {{ error }} -->
+      <p
+        v-else-if="!rankedMealKits.length && !isLoading"
+        class="error"
+        style="text-align: center;"
+      >
         {{ selectedYear }}년 {{ selectedMonth }}월 밀키트 총 매출액 데이터가 없습니다.
       </p>
     </div>
@@ -61,36 +66,34 @@
 
 <script>
 import { ref, computed, onMounted } from "vue";
-import { useMainMonthlyMealKitSalesRankStore } from "@/store/MainMonthlyMealKitSalesRank";
+import { useMealKitStore } from "@/store/mealKitStore";
 
 export default {
   name: "MainMonthlyMealKitSalesRank",
   setup() {
-    const storeId = 1; // 기본 매장 ID (예시)
+    const storeId = 1;
     const currentDate = new Date();
 
-    // 년/월 상태
     const selectedYear = ref(currentDate.getFullYear());
     const selectedMonth = ref(currentDate.getMonth() + 1);
     const popupYear = ref(currentDate.getFullYear());
     const isPopupOpen = ref(false);
 
-    // Pinia 스토어 상태 연결
-    const store = useMainMonthlyMealKitSalesRankStore();
-    const rankedMealKits = computed(() => store.rankedMealKits);
-    const isLoading = computed(() => store.isLoading);
-    const error = computed(() => store.error);
+    const mealKitStore = useMealKitStore();
+    const rankedMealKits = computed(() => mealKitStore.monthlyRevenueRank);
+    const isLoading = computed(() => mealKitStore.isLoading);
+    const error = computed(() => mealKitStore.error);
 
-    // 데이터 로드 함수
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
     const fetchRankings = async () => {
-      await store.fetchTop5MealKits(
+      await mealKitStore.fetchMonthlyRevenueRank(
         storeId,
         selectedYear.value,
         selectedMonth.value
       );
     };
 
-    // 팝업 관리 함수
     const togglePopup = () => {
       isPopupOpen.value = !isPopupOpen.value;
     };
@@ -114,7 +117,6 @@ export default {
       fetchRankings();
     };
 
-    // 컴포넌트 마운트 시 데이터 로드
     onMounted(fetchRankings);
 
     return {
@@ -122,7 +124,7 @@ export default {
       selectedMonth,
       popupYear,
       isPopupOpen,
-      months: Array.from({ length: 12 }, (_, i) => i + 1),
+      months,
       rankedMealKits,
       isLoading,
       error,
@@ -187,7 +189,7 @@ h3 {
   font-weight: bold;
   color: #333;
   border-radius: 8px;
-  background-color: #FFD1A7;
+  background-color: #ffd1a7;
   padding: 20px;
   margin-top: 0px;
 }
@@ -215,12 +217,12 @@ td {
 }
 
 .row:hover {
-transform: scale(1.02);
+  transform: scale(1.02);
 }
 
 .row {
-transition: transform 0.2s ease-in-out;
-cursor: default;
+  transition: transform 0.2s ease-in-out;
+  cursor: default;
 }
 
 .popup-overlay {

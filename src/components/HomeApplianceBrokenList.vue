@@ -1,8 +1,14 @@
+<!-- HomeApplianceBrokenList.vue -->
 <template>
   <div class="broken-appliance-list">
     <h1>고장난 가전 리스트</h1>
-    <div v-if="isLoading" class="loading-text">데이터를 로드 중입니다...</div>
-    <div v-else-if="error" class="error-text">{{ error }}</div>
+
+    <div v-if="isLoading" class="loading-text">
+      데이터를 로드 중입니다...
+    </div>
+    <div v-else-if="error" class="error-text">
+      {{ error }}
+    </div>
     <div v-else class="appliance-list-table">
       <table>
         <thead>
@@ -24,39 +30,43 @@
             <td>{{ appliance.category }}</td>
             <td>{{ appliance.status }}</td>
           </tr>
+          <tr v-if="!brokenAppliances.length">
+            <td colspan="4" class="empty-text">
+              고장난 가전이 없습니다.
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
 import { onMounted, computed } from "vue";
-import { useHomeApplianceBrokenStore } from "@/store/HomeApplianceBroken";
+import { useHomeApplianceStore } from "@/store/homeApplianceStore";
 
-export default {
-  name: "HomeApplianceBrokenList",
-  setup() {
-    const storeId = 1; // 예제 매장 ID
-    const brokenStore = useHomeApplianceBrokenStore();
-
-    // 상태 가져오기
-    const brokenAppliances = computed(() => brokenStore.brokenAppliances);
-    const isLoading = computed(() => brokenStore.isLoading);
-    const error = computed(() => brokenStore.error);
-
-    // 데이터 로드
-    onMounted(async () => {
-      await brokenStore.fetchBrokenAppliances(storeId);
-    });
-
-    return {
-      brokenAppliances,
-      isLoading,
-      error,
-    };
+const props = defineProps({
+  storeId: {
+    type: Number,
+    default: 1,
   },
-};
+});
+
+const homeApplianceStore = useHomeApplianceStore();
+
+const brokenAppliances = computed(
+  () => homeApplianceStore.brokenAppliances
+);
+const isLoading = computed(
+  () => homeApplianceStore.isLoadingBroken
+);
+const error = computed(
+  () => homeApplianceStore.brokenError
+);
+
+onMounted(async () => {
+  await homeApplianceStore.fetchBrokenAppliances(props.storeId);
+});
 </script>
 
 <style scoped>
@@ -84,7 +94,7 @@ h1 {
   border-radius: 8px;
   background-color: #FFD1A7;
   padding: 20px;
-  margin-top: 0px;
+  margin-top: 0;
 }
 
 table {
@@ -124,14 +134,22 @@ tbody td {
 }
 
 .loading-text,
-.error-text {
+.error-text,
+.empty-text {
   text-align: center;
   font-size: 14px;
-  color: #666;
   margin-top: 20px;
+}
+
+.loading-text {
+  color: #666;
 }
 
 .error-text {
   color: red;
+}
+
+.empty-text {
+  color: #999;
 }
 </style>

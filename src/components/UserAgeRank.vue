@@ -9,10 +9,13 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Loop through the topMealKitsByAge object to display each age group -->
-        <tr v-for="(mealKit, age) in topMealKitsByAge" :key="age" class="row">
+        <tr
+          v-for="(mealKit, age) in topMealKitsByAge"
+          :key="age"
+          class="row"
+        >
           <td>{{ age }}</td>
-          <td>{{ mealKit ? mealKit.mealKitName : '없음' }}</td>
+          <td>{{ mealKit ? mealKit.mealKitName : "없음" }}</td>
         </tr>
       </tbody>
     </table>
@@ -21,40 +24,30 @@
     <p>로딩 중...</p>
   </div>
 </template>
-  
-<script>
-import { computed, onMounted } from 'vue';
-import { useUserAgeRankStore } from '@/store/UserAgeRank';
 
-export default {
-  name: 'AgeRank',
-  setup() {
-    // Pinia store 가져오기
-    const userAgeRankStore = useUserAgeRankStore();
+<script setup>
+import { computed, onMounted } from "vue";
+import { useUserStore } from "@/store/userStore";
 
-    // 상태 변수
-    const storeId = 1; // 매장 ID (하드코딩, 필요에 따라 변경 가능)
-
-    // 컴포저블 API에서 가져오는 computed 변수들
-    const topMealKitsByAge = computed(() => userAgeRankStore.topMealKitsByAge);
-    const isLoading = computed(() => userAgeRankStore.isLoading);
-
-    // 데이터 로드 함수
-    const fetchPreferences = async () => {
-      await userAgeRankStore.fetchTopMealKitsByAge(storeId);
-    };
-
-    // 컴포넌트 마운트 시 데이터 로드
-    onMounted(fetchPreferences);
-
-    return {
-      topMealKitsByAge,
-      isLoading,
-    };
+const props = defineProps({
+  storeId: {
+    type: Number,
+    default: 1,
   },
+});
+
+const userStore = useUserStore();
+
+const topMealKitsByAge = computed(() => userStore.topMealKitsByAge);
+const isLoading = computed(() => userStore.isLoading);
+
+const fetchPreferences = async () => {
+  await userStore.fetchTopMealKitsByAge(props.storeId);
 };
+
+onMounted(fetchPreferences);
 </script>
-  
+
 <style scoped>
 .preference-table-wrapper {
   width: 330px;
@@ -99,12 +92,11 @@ td {
 }
 
 .row:hover {
-transform: scale(1.02);
+  transform: scale(1.02);
 }
 
 .row {
-transition: transform 0.2s ease-in-out;
-cursor: default;
+  transition: transform 0.2s ease-in-out;
+  cursor: default;
 }
 </style>
-  

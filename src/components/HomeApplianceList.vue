@@ -1,7 +1,15 @@
+<!-- HomeApplianceList.vue -->
 <template>
   <div class="appliance-list">
     <h1>가전 리스트</h1>
-    <div class="appliance-list-table">
+
+    <div v-if="isLoading" class="loading-text">
+      데이터를 로드 중입니다...
+    </div>
+    <div v-else-if="error" class="error-text">
+      {{ error }}
+    </div>
+    <div v-else class="appliance-list-table">
       <table>
         <thead>
           <tr>
@@ -22,41 +30,37 @@
             <td>{{ appliance.category }}</td>
             <!-- <td>{{ appliance.status }}</td> -->
           </tr>
+          <tr v-if="!appliances.length">
+            <td colspan="3" class="empty-text">
+              등록된 가전이 없습니다.
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
-    <p v-if="isLoading" class="loading-text">데이터를 로드 중입니다...</p>
-    <p v-if="error" class="error-text">{{ error }}</p>
   </div>
 </template>
 
-<script>
+<script setup>
 import { onMounted, computed } from "vue";
-import { useHomeApplianceStore } from "@/store/HomeAppliance";
+import { useHomeApplianceStore } from "@/store/homeApplianceStore";
 
-export default {
-  name: "HomeApplianceList",
-  setup() {
-    const storeId = 1; // 예제 매장 ID
-    const homeApplianceStore = useHomeApplianceStore();
-
-    // 상태 가져오기
-    const appliances = computed(() => homeApplianceStore.appliances);
-    const isLoading = computed(() => homeApplianceStore.isLoading);
-    const error = computed(() => homeApplianceStore.error);
-
-    // 데이터 로드
-    onMounted(async () => {
-      await homeApplianceStore.fetchAppliances(storeId);
-    });
-
-    return {
-      appliances,
-      isLoading,
-      error,
-    };
+const props = defineProps({
+  storeId: {
+    type: Number,
+    default: 1,
   },
-};
+});
+
+const homeApplianceStore = useHomeApplianceStore();
+
+const appliances = computed(() => homeApplianceStore.appliances);
+const isLoading = computed(() => homeApplianceStore.isLoadingAppliances);
+const error = computed(() => homeApplianceStore.appliancesError);
+
+onMounted(async () => {
+  await homeApplianceStore.fetchAppliances(props.storeId);
+});
 </script>
 
 <style scoped>
@@ -84,7 +88,7 @@ h1 {
   border-radius: 8px;
   background-color: #FFD1A7;
   padding: 20px;
-  margin-top: 0px;
+  margin-top: 0;
 }
 
 table {
@@ -124,14 +128,22 @@ tbody td {
 }
 
 .loading-text,
-.error-text {
+.error-text,
+.empty-text {
   text-align: center;
   font-size: 14px;
-  color: #666;
   margin-top: 20px;
+}
+
+.loading-text {
+  color: #666;
 }
 
 .error-text {
   color: red;
+}
+
+.empty-text {
+  color: #999;
 }
 </style>

@@ -9,120 +9,115 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted, computed } from "vue";
 import { Chart } from "chart.js";
-import { useUserListStore } from "@/store/User";
+import { useUserStore } from "@/store/userStore";
 
-export default {
-  name: "UserGenderChart",
-  setup() {
-    const storeId = 1; // 예시 매장 ID
-    const userListStore = useUserListStore();
-
-    // Pinia 상태
-    const users = computed(() => userListStore.users);
-    const isLoading = computed(() => userListStore.isLoading);
-    const error = computed(() => userListStore.error);
-
-    // 차트 참조 및 인스턴스
-    const genderDoughnutChart = ref(null);
-    let chartInstance = null;
-
-    // 성별 비율 계산 (필터와 데이터 변환을 분리)
-    const genderCounts = computed(() => {
-      const counts = { male: 0, female: 0 };
-      users.value.forEach((user) => {
-        if (user.userGender === "남") counts.male++;
-        if (user.userGender === "여") counts.female++;
-      });
-      return [counts.male, counts.female];
-    });
-
-    // 차트 초기화 및 렌더링
-    const initializeChart = () => {
-      const ctx = genderDoughnutChart.value.getContext("2d");
-      chartInstance = new Chart(ctx, {
-        type: "pie",
-        data: {
-          labels: ["남성", "여성"],
-          datasets: [
-            {
-              data: genderCounts.value,
-              backgroundColor: ["#36A2EB", "#FF6384"],
-              borderWidth: 0,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          animation: {
-            duration: 500, // 렌더링 애니메이션 시간 단축
-          },
-          plugins: {
-            legend: {
-              position: "right",
-              labels: {
-                generateLabels: (chart) => {
-                  const dataset = chart.data.datasets[0];
-                  return chart.data.labels.map((label, i) => ({
-                    text: `${label} (${dataset.data[i]}명)`, // 범례에 고객 수 추가
-                    fillStyle: dataset.backgroundColor[i],
-                    index: i,
-                  }));
-                },
-                boxWidth: 12,
-                padding: 15,
-                font: {
-                  size: 12,
-                },
-              },
-            },
-            tooltip: {
-              callbacks: {
-                label: (tooltipItem) => {
-                  const dataset = tooltipItem.dataset;
-                  const total = dataset.data.reduce((acc, val) => acc + val, 0);
-                  const currentValue = dataset.data[tooltipItem.dataIndex];
-                  const percentage = ((currentValue / total) * 100).toFixed(2);
-                  return `${tooltipItem.label}: ${percentage}%`;
-                },
-              },
-            },
-          },
-        },
-      });
-    };
-
-    // 차트 업데이트
-    const updateChart = () => {
-      if (chartInstance) {
-        chartInstance.data.datasets[0].data = genderCounts.value; // 데이터만 갱신
-        chartInstance.update();
-      }
-    };
-
-    // 데이터 로드 후 초기화
-    const fetchUsers = async () => {
-      await userListStore.fetchUsers(storeId);
-      if (!chartInstance) {
-        initializeChart();
-      } else {
-        updateChart();
-      }
-    };
-
-    // 초기 로드
-    onMounted(fetchUsers);
-
-    return {
-      genderDoughnutChart,
-      users,
-      isLoading,
-      error,
-    };
+const props = defineProps({
+  storeId: {
+    type: Number,
+    default: 1,
   },
+});
+
+const userStore = useUserStore();
+
+const users = computed(() => userStore.users);
+const isLoading = computed(() => userStore.isLoading);
+const error = computed(() => userStore.error);
+
+const genderDoughnutChart = ref(null);
+const chartInstance = ref(null);
+
+const genderCounts = computed(() => {
+  const counts = { male: 0, female: 0 };
+  users.value.forEach((user) => {
+    if (user.userGender === "남") counts.male++;
+    if (user.userGender === "여") counts.female++;
+  });
+  return [counts.male, counts.female];
+});
+
+const initializeChart = () => {
+  if (!genderDoughnutChart.value) return;
+
+  const ctx = genderDoughnutChart.value.getContext("2d");
+  chartInstance.value = new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels: ["남성", "여성"],
+      datasets: [
+        {
+          data: genderCounts.value,
+          backgroundColor: ["#36A2EB", "#FF6384"],
+          borderWidth: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      animation: {
+        duration: 500,
+      },
+      plugins: {
+        legend: {
+          position: "right",
+          labels: {
+            generateLabels: (chart) => {
+              const dataset = chart.data.datasets[0];
+              return chart.data.labels.map((label, i) => ({
+                text: `${label} (${dataset.data[i]}명)`,
+                fillStyle: dataset.backgroundColor[i],
+                index: i,
+              }));
+            },
+            boxWidth: 12,
+            padding: 15,
+            font: {
+              size: 12,
+            },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (tooltipItem) => {
+              const dataset = tooltipItem.dataset;
+              const total = dataset.data.reduce(
+                (acc, val) => acc + val,
+                0
+              );
+              const currentValue =
+                dataset.data[tooltipItem.dataIndex] || 0;
+              const percentage = total
+                ? ((currentValue / total) * 100).toFixed(2)
+                : 0;
+              return `${tooltipItem.label}: ${percentage}%`;
+            },
+          },
+        },
+      },
+    },
+  });
 };
+
+const updateChart = () => {
+  if (chartInstance.value) {
+    chartInstance.value.data.datasets[0].data = genderCounts.value;
+    chartInstance.value.update();
+  }
+};
+
+const fetchUsers = async () => {
+  await userStore.fetchUsers(props.storeId);
+  if (!chartInstance.value) {
+    initializeChart();
+  } else {
+    updateChart();
+  }
+};
+
+onMounted(fetchUsers);
 </script>
 
 <style scoped>
@@ -157,5 +152,11 @@ h3 {
   background-color: #FFD1A7;
   padding: 20px;
   margin-top: 0px;
+}
+
+.error {
+  margin-top: 10px;
+  color: red;
+  font-size: 13px;
 }
 </style>

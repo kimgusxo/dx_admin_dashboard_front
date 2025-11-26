@@ -12,56 +12,55 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(product, index) in rankedLaundrySupplies" :key="index" class="row">
+        <tr
+          v-for="(product, index) in rankedLaundrySupplies"
+          :key="index"
+          class="row"
+        >
           <td>{{ index + 1 }}</td>
           <td>{{ product.laundrySuppliesName }}</td>
           <td>{{ product.totalSales.toLocaleString() }}</td>
         </tr>
       </tbody>
     </table>
+
+    <p v-if="isLoading" style="text-align:center; margin-top:10px;">
+      데이터를 로드 중입니다...
+    </p>
+    <p v-else-if="error" style="text-align:center; margin-top:10px; color:red;">
+      {{ error }}
+    </p>
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, computed, onMounted } from "vue";
-import { useLaundryYearlyRankStore } from "@/store/LaundryYearlyRank"; // Pinia Store Import
+import { useLaundrySuppliesStore } from "@/store/laundrySuppliesStore";
 
-export default {
-  name: "Test",
-  setup() {
-    const storeId = 1; // 예시 Store ID
-    const selectedYear = ref(2023); // 예시로 2023년 설정
-    
-    // 스토어 상태 가져오기
-    const laundryYearlyRankStore = useLaundryYearlyRankStore();
-    const rankedLaundrySupplies = computed(() => laundryYearlyRankStore.rankedLaundrySupplies);
-    const isLoading = computed(() => laundryYearlyRankStore.isLoading);
-    const error = computed(() => laundryYearlyRankStore.error);
-
-    // 데이터를 가져오는 함수
-    const fetchRankings = async () => {
-      await laundryYearlyRankStore.fetchLaundrySalesRank(
-        storeId, 
-        selectedYear.value
-      );
-
-      // 데이터 확인용 콘솔 출력
-      // console.log("Ranked Laundry Supplies in Component:", rankedLaundrySupplies.value);
-    };
-
-    // 컴포넌트 마운트 시 데이터 가져오기
-    onMounted(fetchRankings);
-
-    return {
-      selectedYear,
-      rankedLaundrySupplies,
-      isLoading,
-      error,
-    };
+const props = defineProps({
+  storeId: {
+    type: Number,
+    default: 1,
   },
-};
-</script>
+  year: {
+    type: Number,
+    default: new Date().getFullYear(),
+  },
+});
 
+const selectedYear = ref(props.year);
+
+const laundryStore = useLaundrySuppliesStore();
+const rankedLaundrySupplies = computed(() => laundryStore.yearlyRank);
+const isLoading = computed(() => laundryStore.isLoading);
+const error = computed(() => laundryStore.error);
+
+const fetchRankings = async () => {
+  await laundryStore.fetchYearlyRank(props.storeId, selectedYear.value);
+};
+
+onMounted(fetchRankings);
+</script>
 
 <style scoped>
 .yearly-rank-wrapper {

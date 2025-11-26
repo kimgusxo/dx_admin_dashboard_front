@@ -32,13 +32,13 @@
 
 <script>
 import { onMounted, computed } from "vue";
-import { useHomeApplianceBrokenStore } from "@/store/HomeApplianceBroken";
+import { useHomeApplianceStore } from "@/store/homeApplianceStore";
 
 export default {
   name: "HomeApplianceBrokenList",
   setup() {
     const storeId = 1; // 예제 매장 ID
-    const brokenStore = useHomeApplianceBrokenStore();
+    const brokenStore = useHomeApplianceStore();
 
     // 상태 가져오기
     const brokenAppliances = computed(() => brokenStore.brokenAppliances);

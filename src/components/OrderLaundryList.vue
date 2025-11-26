@@ -34,7 +34,12 @@
             <td>{{ supply.laundrySuppliesPrice.toLocaleString() }}원</td>
             <td>{{ supply.storeCount }}</td>
             <td>
-              <button @click="addToCart(supply.laundrySuppliesId)" class="button">담기</button>
+              <button
+                @click="addToCart(supply.laundrySuppliesId)"
+                class="button"
+              >
+                담기
+              </button>
             </td>
           </tr>
         </tbody>
@@ -44,25 +49,25 @@
 </template>
 
 <script setup>
-import { useLaundryStore } from "@/store/Laundry";
+import { useLaundrySuppliesStore } from "@/store/laundrySuppliesStore";
 import { storeToRefs } from "pinia";
 import { ref, computed, onMounted } from "vue";
 
-const laundryStore = useLaundryStore();
+const laundryStore = useLaundrySuppliesStore();
 const { lowStockLaundrySupplies } = storeToRefs(laundryStore);
 
-// 필터 상태
 const selectedClassification = ref("");
 const sortOrder = ref("asc");
 
-// 필터링된 아이템
 const filteredItems = computed(() =>
   lowStockLaundrySupplies.value.filter((supply) => {
-    return !selectedClassification.value || supply.laundrySuppliesClassification === selectedClassification.value;
+    return (
+      !selectedClassification.value ||
+      supply.laundrySuppliesClassification === selectedClassification.value
+    );
   })
 );
 
-// 정렬된 아이템
 const sortedItems = computed(() =>
   [...filteredItems.value].sort((a, b) => {
     return sortOrder.value === "asc"
@@ -71,30 +76,29 @@ const sortedItems = computed(() =>
   })
 );
 
-// 정렬 순서 변경
 const toggleSortOrder = () => {
   sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
 };
 
-// 장바구니에 추가
 const addToCart = (id) => {
   laundryStore.addToCart(id);
 };
 
-// 분류 옵션
 const classifications = computed(() => [
-  ...new Set(lowStockLaundrySupplies.value.map((supply) => supply.laundrySuppliesClassification)),
+  ...new Set(
+    lowStockLaundrySupplies.value.map(
+      (supply) => supply.laundrySuppliesClassification
+    )
+  ),
 ]);
 
-// 데이터 로드
 onMounted(async () => {
-  const storeId = 1; // Example Store ID
+  const storeId = 1;
   await laundryStore.fetchLaundrySupplies(storeId);
 });
 </script>
 
 <style scoped>
-/* 기존 스타일 유지 */
 .meal-kit-table-wrapper {
   width: 700px;
   height: 400px;
@@ -122,8 +126,8 @@ select {
   font-size: 16px;
   font-weight: bold;
   color: #333;
-  border-color: #FFF7EF;
-  background-color: #FFF7EF;
+  border-color: #fff7ef;
+  background-color: #fff7ef;
   padding: 0;
 }
 
@@ -159,8 +163,8 @@ tbody td {
 }
 
 .button {
-  color: #FFD1A7;
-  background-color: #FF5E23;
+  color: #ffd1a7;
+  background-color: #ff5e23;
   font-size: 15px;
   border: 2px solid transparent;
   border-radius: 8px;
@@ -171,7 +175,7 @@ tbody td {
 .button:hover {
   transform: scale(1.1);
   background-color: #ededed;
-  color: #FF5E23;
+  color: #ff5e23;
   cursor: pointer;
 }
 </style>
